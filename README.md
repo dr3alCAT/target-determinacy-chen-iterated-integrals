@@ -2,7 +2,7 @@
 
 **Finite relation systems and exact algebraic reduction**
 
-This repository contains the edited manuscript and its compiled PDF.
+The manuscript source and compiled PDF are prepared locally; the repository currently contains this project description. The manuscript files will be added in a follow-up push.
 
 ## Abstract
 
