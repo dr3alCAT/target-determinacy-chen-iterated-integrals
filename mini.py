@@ -1,5 +1,6 @@
-# mini.py -- the relations of the big proof at small weight, with the whole matrix printed (needs sympy)
-import itertools, sys
+# mini.py -- exact low-weight relation model; use --matrix to print the full system
+import argparse
+import itertools
 import sympy as sp
 from collections import Counter
 
@@ -61,7 +62,7 @@ def dual(w):
     return res
 
 VAL = {}
-def build(n):
+def _build_weight(n):
     W = words(n); known = {w: -Li1(n, -w[0]) for w in W if depth(w) == 1}
     unk = [w for w in W if w not in known]; X = {w: sp.Symbol('x[' + name(w) + ']') for w in unk}
     rows = []                           # (label, {word: coefficient}, right-hand side)
@@ -96,17 +97,86 @@ def build(n):
         rel(f'du {name(w)}', lhs, 0)
     cols = list(X)
     eqs = [sum(c*X[w] for w, c in r.items()) - rhs for _, r, rhs in rows]
-    A, b = sp.linear_eq_to_matrix(eqs, [X[w] for w in cols]) if cols else (sp.zeros(0, 0), sp.zeros(0, 1))
-    sol = sp.solve(eqs, [X[w] for w in cols], dict=True)[0] if cols else {}
+    # Keep the row dimension even when there are no unknowns (weight one).
+    A, b = sp.linear_eq_to_matrix(eqs, [X[w] for w in cols])
+    rank = A.rank()
+    augmented_rank = A.row_join(b).rank()
+    if rank != augmented_rank:
+        raise ArithmeticError(
+            f"inconsistent relation system at weight {n}: "
+            f"rank(A)={rank}, rank([A|b])={augmented_rank}"
+        )
+    if cols:
+        solution_set = sp.linsolve((A, b), *[X[w] for w in cols])
+        if solution_set == sp.EmptySet:
+            raise ArithmeticError(f"no solution found at weight {n}")
+        solution_tuple = next(iter(solution_set))
+        sol = dict(zip([X[w] for w in cols], solution_tuple))
+    else:
+        sol = {}
     VAL.update(known)
     for w in cols: VAL[w] = sp.expand(sol.get(X[w], X[w]))
-    return dict(words=W, known=known, cols=cols, rows=rows, A=A, b=b)
+    return dict(
+        words=W, known=known, cols=cols, rows=rows, A=A, b=b,
+        rank=rank, augmented_rank=augmented_rank
+    )
 
-if __name__ == '__main__':
-    for n in range(1, int(sys.argv[1]) + 1):
-        d = build(n)
-        rk = d['A'].rank() if d['cols'] else 0
-        print(f'weight {n}: {len(d["words"])} words, {len(d["cols"])} unknown, {len(d["rows"])} relations, rank {rk}, '
-              f'free {len(d["cols"]) - rk}')
+
+def build(n):
+    """Build one weight independently, computing all lower weights first."""
+    if isinstance(n, bool) or not isinstance(n, int):
+        raise TypeError("weight must be an integer")
+    if not 1 <= n <= 3:
+        raise ValueError(f"supported weights are 1 through 3; got {n}")
+    VAL.clear()
+    for lower_weight in range(1, n):
+        _build_weight(lower_weight)
+    return _build_weight(n)
+
+
+def print_matrix(d):
+    """Print the complete exact augmented matrix with its row/column labels."""
+    print("\\nColumn labels:")
+    for j, word in enumerate(d['cols']):
+        print(f"  {j}: I({name(word)})")
+    print("\\nRow labels:")
+    for j, (label, _, _) in enumerate(d['rows']):
+        print(f"  {j}: {label}")
+    print("\\nExact augmented matrix [A | b]:")
+    sp.pprint(d['A'].row_join(d['b']), wrap_line=False)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Build exact shuffle/stuffle/distribution/duality systems."
+    )
+    parser.add_argument(
+        "max_weight", type=int, choices=(1, 2, 3),
+        help="maximum weight to compute (1, 2, or 3)"
+    )
+    parser.add_argument(
+        "--matrix", action="store_true",
+        help="print every complete augmented relation matrix with labels"
+    )
+    args = parser.parse_args(argv)
+
+    VAL.clear()
+    for n in range(1, args.max_weight + 1):
+        d = _build_weight(n)
+        rk = d["rank"]
+        free = len(d["cols"]) - rk
+        print(
+            f"weight {n}: {len(d['words'])} words, {len(d['cols'])} unknown, "
+            f"{len(d['rows'])} relations, rank {rk}, free {free}, "
+            f"augmented rank {d['augmented_rank']}"
+        )
         if n == 2:
-            for w in d['cols']: print(f'   I({name(w)}) =', VAL[w])
+            for word in d["cols"]:
+                print(f"   I({name(word)}) =", VAL[word])
+        if args.matrix:
+            print_matrix(d)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
