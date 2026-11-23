@@ -1,32 +1,71 @@
-# Target Determinacy in Weight-Two Chen Iterated Integrals
+# Low-weight Chen iterated-integral relation model
 
-**Finite relation systems and exact algebraic reduction**
+This repository contains the **code implementation only**. The research
+manuscript and its PDF are maintained separately and are intentionally not
+included here.
 
-The manuscript source and compiled PDF are prepared locally; the repository currently contains this project description. The manuscript files will be added in a follow-up push.
+## Program
 
-## Abstract
+`mini.py` constructs the shuffle, stuffle (quasi-shuffle), distribution, and
+Möbius-duality relations over the fourth-root alphabet. It converts the
+relations into exact SymPy linear systems, checks consistency by comparing
+coefficient and augmented ranks, and solves them while leaving free variables
+symbolic.
 
-We develop an exact relation-based method for evaluating Chen iterated integrals with letters in the fourth-root alphabet `{0} ∪ μ₄`. The construction combines shuffle and stuffle identities with distribution relations and Möbius duality, producing a finite linear system with exact algebraic coefficients and right-hand sides built from lower-weight values. The central question is target determinacy: whether a particular linear combination is determined by the available relations even when the system has a nontrivial nullspace. The weight-two calculation establishes the complete reduction of the sixteen convergent words in the alphabet. Two weight-three challenges are included at the end as open extensions.
+The implementation supports weights 1, 2, and 3. At weight 3, the resulting
+system has one free parameter; the program does not assign it an arbitrary
+value.
 
-## Files
+## Requirements
 
-- `main.tex` — editable LaTeX source of the latest edited manuscript.
-- `main.pdf` — compiled manuscript (15 pages).
+- Python 3.10 or newer
+- SymPy
 
-## Build
-
-Requires a LaTeX distribution with the packages used in the source, including `amsmath`, `amssymb`, `mathtools`, `geometry`, `microtype`, `fancyhdr`, `tcolorbox`, `enumitem`, `graphicx`, `xcolor`, and TikZ.
-
-Compile with:
+Install the dependency:
 
 ```bash
-latexmk -pdf main.tex
+python -m pip install -r requirements.txt
 ```
 
-## Status
+## Usage
 
-The weight-two relation system and its reductions are the results developed in the manuscript. The two weight-three integrals at the end are posed as challenges; no evaluations are claimed there.
+Compute through weight 2:
 
-## Author
+```bash
+python mini.py 2
+```
 
-Toluwanimi Charles
+Compute through weight 3 and print each full, labelled augmented matrix:
+
+```bash
+python mini.py 3 --matrix
+```
+
+The matrix option prints the row labels, column labels, and exact matrix
+`[A | b]`. Weight 3 produces a large matrix, so omit the option when only
+ranks and solved values are required.
+
+The module can also be imported. Each call to `build(n)` is independent and
+automatically computes all lower weights needed by the requested system:
+
+```python
+import mini
+
+weight_two = mini.build(2)
+weight_three = mini.build(3)
+
+print(weight_two["rank"])
+print(weight_three["rank"], weight_three["augmented_rank"])
+```
+
+The returned dictionary contains `words`, `known`, `cols`, `rows`, `A`,
+`b`, `rank`, and `augmented_rank`. Solved values are available in
+`mini.VAL` after calling `build(n)`.
+
+## Tests
+
+Run the regression suite:
+
+```bash
+python -m unittest -v
+```
