@@ -136,13 +136,13 @@ def build(n):
 
 def print_matrix(d):
     """Print the complete exact augmented matrix with its row/column labels."""
-    print("\\nColumn labels:")
+    print("\nColumn labels:")
     for j, word in enumerate(d['cols']):
         print(f"  {j}: I({name(word)})")
-    print("\\nRow labels:")
+    print("\nRow labels:")
     for j, (label, _, _) in enumerate(d['rows']):
         print(f"  {j}: {label}")
-    print("\\nExact augmented matrix [A | b]:")
+    print("\nExact augmented matrix [A | b]:")
     sp.pprint(d['A'].row_join(d['b']), wrap_line=False)
 
 
