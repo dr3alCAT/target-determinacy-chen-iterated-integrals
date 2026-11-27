@@ -16,12 +16,18 @@ The implementation supports weights 1, 2, and 3. At weight 3, the resulting
 system has one free parameter; the program does not assign it an arbitrary
 value.
 
+`weight_three_numerical_checks.py` is a separate, optional mpmath script for
+numerically checking the seven weight-three imaginary-part relations and the
+two target-integral evaluations. It is independent of `mini.py`; its
+numerical output is a computational cross-check, not a proof.
+
 ## Requirements
 
 - Python 3.10 or newer
 - SymPy
+- mpmath
 
-Install the dependency:
+Install the dependencies:
 
 ```bash
 python -m pip install -r requirements.txt
@@ -44,6 +50,12 @@ python mini.py 3 --matrix
 The matrix option prints the row labels, column labels, and exact matrix
 `[A | b]`. Weight 3 produces a large matrix, so omit the option when only
 ranks and solved values are required.
+
+Run the optional numerical spot checks:
+
+```bash
+python weight_three_numerical_checks.py
+```
 
 The module can also be imported. Each call to `build(n)` is independent and
 automatically computes all lower weights needed by the requested system:
